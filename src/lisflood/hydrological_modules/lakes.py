@@ -151,6 +151,7 @@ class lakes(HydroModule):
                             # if no lakeA is given then use Normal discharge to calculate LakeA
                             chanwidth = 7.1 * np.power(float(self.var.waterbody_info[i][7]), 0.539)
                             self.var.LakeACC[lakeindex] = mult * 0.612 * 2 / 3 * chanwidth * (2 * 9.81) ** 0.5
+                            
 
                 self.var.LakeAreaC = maskinfo.in_zero()
                 np.put(self.var.LakeAreaC, self.var.LakeIndex, self.var.LakeAreaCC)

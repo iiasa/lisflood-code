@@ -224,6 +224,7 @@ class reservoir(HydroModule):
                     if resindex[0].size > 0:
                         resindex = resindex[0].tolist()[0]
                         if int(self.var.waterbody_info[i][4]) > 0: self.var.reservoirTypeCC[resindex] = int(self.var.waterbody_info[i][4])
+                        if float(self.var.waterbody_info[i][6]) > 0: self.var.ResAreaCC[resindex] = float(self.var.waterbody_info[i][6]) * 1000000.
 
                         if float(self.var.waterbody_info[i][7]) > 0: self.var.NormalReservoirOutflowCC[resindex] = float(self.var.waterbody_info[i][7])
                         # from Mio. m3 (in Excel) to m3 as rstor.txt is in m3
