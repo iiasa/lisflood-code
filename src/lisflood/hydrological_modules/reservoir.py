@@ -165,6 +165,8 @@ class reservoir(HydroModule):
                 ResAreaM2 = lookupscalar(str(binding['TabResArea']), ReservoirSitePcr)
                 self.var.ResAreaC = compressArray(ResAreaM2)
                 self.var.ResAreaCC = np.compress(self.var.ReservoirSitesC > 0, self.var.ResAreaC)
+            else:
+                self.var.ResAreaCC = {}
                 # Reservoir area [m2]
 
             ConservativeStorageLimit = lookupscalar(str(binding['TabConservativeStorageLimit']), ReservoirSitePcr)
