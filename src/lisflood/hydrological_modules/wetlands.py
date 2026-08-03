@@ -20,6 +20,7 @@ import warnings
 import importlib
 # importlib to import pandas as pd and excel for additional reservoirs as Excel table
 import datetime
+from dateutil.parser import parse
 
 
 import numpy as np
@@ -175,7 +176,10 @@ class wetlands(HydroModule):
             if option['reservoir_lakes_Excel']:
                 # if wetlands are stored in Excel file
                 self.var.wetland_area = self.wetland_readarea(self.var.xl_settings_file_path)
-                doy = int(datetime.datetime.strptime(binding['CalendarDayStart'], '%d/%m/%Y %H:%M').strftime('%j'))
+                #doy = int(datetime.datetime.strptime(binding['CalendarDayStart'], '%d/%m/%Y %H:%M').strftime('%j'))
+                # fixed -> now it counts from the right day
+                doy = self.var.CalendarDay.timetuple().tm_yday
+
                 self.var.WetlandAreaCC = self.var.wetland_area[doy-1,:] * 1000000
                 # back to wetlandArea , because it is used in routing_kinematic
                 self.var.wetlandArea = maskinfo.in_zero()
