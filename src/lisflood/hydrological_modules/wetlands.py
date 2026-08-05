@@ -223,6 +223,10 @@ class wetlands(HydroModule):
                 self.var.WetlandLevelCC = WetlandStorageIniM3CC / self.var.WetlandAreaCC
             else:
                 self.var.WetlandLevelCC = np.compress(self.var.WetlandSitesC > 0, WetlandInitialLevelValue)
+
+                # use the day before to calculate the storage of the previous day
+                daybefore = (self.var.CalendarDay - datetime.timedelta(days=1)).timetuple().tm_yday
+                self.var.WetlandAreaCC = self.var.wetland_area[daybefore-1, :] * 1000000
                 WetlandStorageIniM3CC = self.var.WetlandAreaCC * self.var.WetlandLevelCC
                 # Initial wetland storage [m3]  based on: S = WetlandArea * H
                 self.var.WetlandAvNetCC = np.compress(self.var.WetlandSitesC > 0, loadmap('PrevDischarge'))
@@ -280,7 +284,6 @@ class wetlands(HydroModule):
             else:
                 self.var.WetlandOutflowCC = np.compress(self.var.WetlandSitesC > 0, WetlandPrevOutflowValue)
 
-
             # if not initialized before, initialize excel wetlands
             if option['reservoir_lakes_Excel']:
                 for i in range(len(self.var.waterbody_info)):
@@ -321,7 +324,6 @@ class wetlands(HydroModule):
             # These are all needed to compute the cumulative mass balance error
 
 
-
     def dynamic_inloop(self, NoRoutingExecuted):
         """ dynamic part of the wetland routine
            inside the sub time step routing routine
@@ -337,6 +339,7 @@ class wetlands(HydroModule):
         if option['simulateWetlands'] and not(option['InitLisflood']):    # only with no InitLisflood
 
             if NoRoutingExecuted==0:
+
                 self.var.WetlandAreaCC = self.var.wetland_area[self.var.CalendarDay - 1, :] * 1000000
                 np.put(self.var.wetlandArea, self.var.WetlandIndex, self.var.WetlandAreaCC)
 
@@ -344,7 +347,6 @@ class wetlands(HydroModule):
                 # Evaporation from lakes is calculated
                 ewWetlandCC = np.compress(self.var.WetlandSitesC > 0, self.var.EWRef)
                 # higher evaporation due to waterplants and swallow lakes
-
                 ewWetlandCC = ewWetlandCC * self.var.WetlandETmult
 
                 # evaporation from open water [mm] to [m] * lake area [m2]
@@ -369,19 +371,19 @@ class wetlands(HydroModule):
 
             WetlandStorageIndicator = self.var.WetlandStorageM3CC /self.var.DtRouting - 0.5 * self.var.WetlandOutflowCC + WetlandIn
             # here S1/dtime - Qout1/2 + WetlandIn , so that is the right part
-            # of the equation above
-
-            # calculation if var.waterBodyTyp = 5 and lake is assumed to be triangular
-            # and therefore the equation is a bit different
+            # of the equation above and therefore the equation is a bit different
+            # Factor is calculated again, because area has changed
+            self.var.WetlandFactor = self.var.WetlandAreaCC / (self.var.DtRouting * np.sqrt(self.var.WetlandACC))
+            self.var.WetlandFactorSqr = np.square(self.var.WetlandFactor)
             #self.var.WetlandOutflowCC = np.square( -self.var.WetlandFactor + np.sqrt(self.var.WetlandFactorSqr + 2 * WetlandStorageIndicator))
             self.var.WetlandOutflowCC = np.square(-0.5 * self.var.WetlandFactor + np.sqrt(0.25 * self.var.WetlandFactorSqr + 2 * WetlandStorageIndicator))
 
             #  lakelevel should be at wetland_maxlevel (default =1.0 m) -> rest goes to outflow
             # if lakelevel >= maxlevel sea level is kept constant and equation is changing
-            testlevel = ((WetlandStorageIndicator - self.var.WetlandOutflowCC * 0.5) * self.var.DtRouting) / self.var.WetlandAreaCC
+            waterlevel = ((WetlandStorageIndicator - self.var.WetlandOutflowCC * 0.5) * self.var.DtRouting) / self.var.WetlandAreaCC
             #outflow adjusted to reach self.var.wetland_maxlevel
             wetlandOut2 = np.maximum(0, 2 * (WetlandStorageIndicator- self.var.wetland_maxlevel * self.var.WetlandAreaCC/self.var.DtRouting))
-            self.var.WetlandOutflowCC = np.where((testlevel > self.var.wetland_maxlevel), wetlandOut2,self.var.WetlandOutflowCC)
+            self.var.WetlandOutflowCC = np.where((waterlevel > self.var.wetland_maxlevel), wetlandOut2,self.var.WetlandOutflowCC)
 
             # Flow out of wetland:
             #  solving the equation  (S2/dtime + Qout2/2) = (S1/dtime + Qout1/2) - Qout1 + (Qin1 + Qin2)/2
