@@ -84,7 +84,6 @@ class wetlands(HydroModule):
     def initial(self):
         """ initial part of the wetlands module
         """
-
         # ************************************************************
         # ***** WETLAND
         # ************************************************************
